@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/kalles-hr" },
+    { "path": "packages/kalles-traffic" },
+    { "path": "packages/kalles-energy-depot" }
+  ]
+}

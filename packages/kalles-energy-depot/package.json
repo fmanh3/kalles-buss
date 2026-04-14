@@ -1,0 +1,25 @@
+{
+  "name": "kalles-energy-depot",
+  "version": "1.0.0",
+  "description": "Energy & Depot Domain for Kalles Buss",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.3.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "knex": "^3.1.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "ts-node": "^10.9.2"
+  }
+}

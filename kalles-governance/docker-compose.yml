@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # --------------------------------------------------------------------------
+  # Event Bus (GCP Pub/Sub Emulator)
+  # --------------------------------------------------------------------------
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: kalles-pubsub
+    ports:
+      - "8085:8085"
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=0.0.0.0:8085
+    command: gcloud beta emulators pubsub start --project=kalles-buss-local --host-port=0.0.0.0:8085
+    networks:
+      - kalles-net
+
+  # --------------------------------------------------------------------------
+  # Databases (PostgreSQL for each Domain)
+  # --------------------------------------------------------------------------
+  # Finance DB
+  finance-db:
+    image: postgres:15-alpine
+    container_name: kalles-finance-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kalles_finance_user
+      POSTGRES_PASSWORD: kalles_finance_password_local
+      POSTGRES_DB: kalles_finance
+    volumes:
+      - finance-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  # HR DB
+  hr-db:
+    image: postgres:15-alpine
+    container_name: kalles-hr-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: kalles_hr_user
+      POSTGRES_PASSWORD: kalles_hr_password_local
+      POSTGRES_DB: kalles_hr
+    volumes:
+      - hr-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  # Traffic DB (with PostGIS for route calculations)
+  traffic-db:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: kalles-traffic-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: kalles_traffic_user
+      POSTGRES_PASSWORD: kalles_traffic_password_local
+      POSTGRES_DB: kalles_traffic
+    volumes:
+      - traffic-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  # --------------------------------------------------------------------------
+  # Microservices
+  # --------------------------------------------------------------------------
+  kalles-finance:
+    build:
+      context: ..
+      dockerfile: kalles-finance/Dockerfile
+    container_name: kalles-finance-app
+    depends_on:
+      - pubsub-emulator
+      - finance-db
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - DB_HOST=finance-db
+      - DB_PORT=5432
+      - DB_USER=kalles_finance_user
+      - DB_PASSWORD=kalles_finance_password_local
+      - DB_NAME=kalles_finance
+    networks:
+      - kalles-net
+
+  kalles-hr:
+    build:
+      context: ..
+      dockerfile: kalles-hr/Dockerfile
+    container_name: kalles-hr-app
+    depends_on:
+      - pubsub-emulator
+      - hr-db
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - DB_HOST=hr-db
+      - DB_PORT=5432
+      - DB_USER=kalles_hr_user
+      - DB_PASSWORD=kalles_hr_password_local
+      - DB_NAME=kalles_hr
+    networks:
+      - kalles-net
+
+  kalles-traffic:
+    build:
+      context: ..
+      dockerfile: kalles-traffic/Dockerfile
+    container_name: kalles-traffic-app
+    depends_on:
+      - pubsub-emulator
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+    networks:
+      - kalles-net
+
+networks:
+  kalles-net:
+    driver: bridge
+
+volumes:
+  finance-db-data:
+  hr-db-data:
+  traffic-db-data:

@@ -1,0 +1,11 @@
+{
+  "name": "@poc/consumer",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@poc/provider": "1.0.0"
+  }
+}

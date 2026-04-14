@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout kalles-customer-success
+      uses: actions/checkout@v4
+      with:
+        path: kalles-buss/kalles-customer-success
+
+    - name: Checkout kalles-traffic (dependency)
+      uses: actions/checkout@v4
+      with:
+        repository: fmanh3/kalles-traffic
+        path: kalles-buss/kalles-traffic
+
+    - name: Checkout kalles-finance (dependency)
+      uses: actions/checkout@v4
+      with:
+        repository: fmanh3/kalles-finance
+        path: kalles-buss/kalles-finance
+
+    - name: Checkout kalles-hr (dependency)
+      uses: actions/checkout@v4
+      with:
+        repository: fmanh3/kalles-hr
+        path: kalles-buss/kalles-hr
+
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+
+    - name: Install BFF dependencies
+      run: npm install --legacy-peer-deps
+      working-directory: kalles-buss/kalles-customer-success/apps/bff
+
+    - name: Install Portal dependencies
+      run: npm install --legacy-peer-deps
+      working-directory: kalles-buss/kalles-customer-success/apps/portal
+
+    - name: Build BFF
+      run: npm run build
+      working-directory: kalles-buss/kalles-customer-success/apps/bff
+
+    - name: Build Portal
+      run: npm run build
+      working-directory: kalles-buss/kalles-customer-success/apps/portal

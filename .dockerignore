@@ -1,0 +1,20 @@
+# Ignorera alla node_modules (vi kör npm install inuti containern)
+**/node_modules
+node_modules
+
+# Ignorera Git-historik
+**/.git
+.git
+
+# Ignorera loggar och temporära filer
+*.log
+cloud-sql-proxy
+.DS_Store
+
+# Ignorera stora bilder/skärmdumpar
+*.png
+*.jpg
+
+# Ignorera dist-mappar
+**/dist
+dist

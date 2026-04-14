@@ -1,0 +1,14 @@
+{
+  "name": "kalles-buss-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "sqlite3": "^5.1.7",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
