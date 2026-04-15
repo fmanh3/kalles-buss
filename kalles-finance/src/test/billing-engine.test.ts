@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Knex from 'knex';
 import { BillingEngine } from '../domain/billing/billing-engine';
 

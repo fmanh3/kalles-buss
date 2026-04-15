@@ -1,12 +1,12 @@
-import { PubSubClient } from '../../kalles-traffic/src/infrastructure/messaging/pubsub-client';
+import { PubSubClient } from '@kalles-buss/shared-utils';
 import express from 'express';
-import Knex from 'knex';
+import knex from 'knex';
 import config from '../knexfile';
 import { ShiftAssignmentRequestedSchema, type ShiftAssignmentRequested } from './domain/events/shift-events';
 import { DailyRestPolicy } from './domain/policies/daily-rest-policy';
 
 async function start() {
-  const db = Knex(config.development!);
+  const db = knex(config.development!);
   const pubsub = new PubSubClient();
 
   // Auto-seed DRIVER-007 for stable testing

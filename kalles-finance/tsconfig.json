@@ -1,9 +1,11 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "outDir": "./dist"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/test"]
+  "include": ["src/**/*", "knexfile.ts"],
+  "exclude": ["node_modules", "dist", "src/test"],
+  "references": [
+    { "path": "../packages/shared-utils" }
+  ]
 }

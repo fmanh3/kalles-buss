@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Users, Wallet, Bus, LogOut, Info, CheckCircle, 
   User, Shield, ClipboardCheck, Map as MapIcon, 
   Battery, AlertTriangle, Navigation, Calendar as CalendarIcon,
-  ChevronRight, Phone, Heart, CreditCard, Briefcase
+  ChevronRight, Phone, Heart, CreditCard, Clock
 } from 'lucide-react';
 import './App.css';
 

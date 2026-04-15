@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "poc/*",
+    "kalles-finance",
+    "kalles-customer-success/apps/*"
   ],
   "devDependencies": {
     "@types/node": "^20.12.7",

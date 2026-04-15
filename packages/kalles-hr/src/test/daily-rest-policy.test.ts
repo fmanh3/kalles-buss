@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { DailyRestPolicy } from '../domain/policies/daily-rest-policy';
 
 describe('UC-HR-01: Validering av Dygnsvila (Compliance)', () => {

@@ -1,8 +1,14 @@
 {
   "files": [],
   "references": [
+    { "path": "packages/shared-utils" },
     { "path": "packages/kalles-hr" },
     { "path": "packages/kalles-traffic" },
-    { "path": "packages/kalles-energy-depot" }
+    { "path": "packages/kalles-energy-depot" },
+    { "path": "kalles-finance" },
+    { "path": "poc/consumer" },
+    { "path": "poc/provider" },
+    { "path": "kalles-customer-success/apps/bff" },
+    { "path": "kalles-customer-success/apps/portal" }
   ]
 }

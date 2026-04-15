@@ -9,6 +9,10 @@
     "composite": true,
     "declaration": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@kalles-buss/shared-utils": ["packages/shared-utils/src"]
+    }
   }
 }

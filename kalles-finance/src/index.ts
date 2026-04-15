@@ -1,8 +1,8 @@
-import { PubSubClient } from '../../kalles-traffic/src/infrastructure/messaging/pubsub-client';
+import { PubSubClient } from '@kalles-buss/shared-utils';
 import { BillingEngine } from './domain/billing/billing-engine';
 import { BankGateway } from './domain/gateways/bank-gateway';
 import { LiquidityService } from './domain/ledger/liquidity-service';
-import Knex from 'knex';
+import knex from 'knex';
 import config from '../knexfile';
 import * as dotenv from 'dotenv';
 import express from 'express';
@@ -10,7 +10,7 @@ import express from 'express';
 dotenv.config();
 
 async function start() {
-  const db = Knex(config.development!);
+  const db = knex(config.development!);
   const billingEngine = new BillingEngine(db);
   const bankGateway = new BankGateway(db);
   const liquidityService = new LiquidityService(db);
@@ -55,7 +55,7 @@ async function start() {
   const APC_SUB_NAME = 'finance-apc-sub';
 
   // Prenumerera på avslutade turer
-  await pubsub.subscribe(TOPIC_NAME, SUB_NAME, async (event) => {
+  await pubsub.subscribe(TOPIC_NAME, SUB_NAME, async (event: any) => {
     try {
       if (event.status === 'COMPLETED' && event.distanceKm) {
         // Hämta passagerarstatistik för turen (i en riktig app skulle vi aggregera detta)
@@ -73,7 +73,7 @@ async function start() {
   });
 
   // Prenumerera på APC-händelser för att bygga underlag (som tidigare)
-  await pubsub.subscribe(APC_TOPIC, APC_SUB_NAME, async (event) => {
+  await pubsub.subscribe(APC_TOPIC, APC_SUB_NAME, async (event: any) => {
     try {
       if (event.boarding !== undefined) {
         await db('tour_passenger_stats')

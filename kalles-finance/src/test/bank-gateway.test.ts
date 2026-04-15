@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Knex from 'knex';
 import { BankGateway } from '../domain/gateways/bank-gateway';
 import { LiquidityService } from '../domain/ledger/liquidity-service';
