@@ -1,0 +1,39 @@
+steps:
+# 1. Install all monorepo dependencies
+- name: 'node:22'
+  entrypoint: 'npm'
+  args: ['install']
+
+# 2. Build all services (to ensure dependencies are built)
+- name: 'node:22'
+  entrypoint: 'npm'
+  args: ['run', 'build']
+
+# 3. Build the Docker image for kalles-finance
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID',
+    '-f', 'kalles-finance/Dockerfile',
+    '.'
+  ]
+
+# 4. Push the image to Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID']
+
+# 5. Deploy to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args: [
+    'run',
+    'deploy',
+    'kalles-finance',
+    '--image', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID',
+    '--region', 'europe-west1',
+    '--platform', 'managed',
+    '--quiet'
+  ]
+
+images:
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID'

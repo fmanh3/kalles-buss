@@ -2,6 +2,9 @@
   "name": "kalles-buss-monorepo",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "tsc -b --force"
+  },
   "workspaces": [
     "packages/*",
     "poc/*",

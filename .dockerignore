@@ -16,5 +16,3 @@ cloud-sql-proxy
 *.jpg
 
 # Ignorera dist-mappar
-**/dist
-dist

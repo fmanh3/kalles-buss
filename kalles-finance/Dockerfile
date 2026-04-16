@@ -1,19 +1,19 @@
+# Denna Dockerfile förutsätter att hela monorepot har byggts
+# och att byggkontexten är roten av monorepot.
+
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy root environment and config if needed
-COPY .env ./
+# Kopiera rotens package.json och package-lock.json
+COPY package.json ./package.json
+COPY package-lock.json ./package-lock.json
 
-# Install dependencies for the specific service
-WORKDIR /app/kalles-finance
-COPY kalles-finance/package*.json ./
-RUN npm install --legacy-peer-deps
+# Installera alla beroenden för monorepot
+# Använd npm ci för att säkerställa att exakta versioner från package-lock.json används
+RUN npm ci
 
-# Copy the entire monorepo so cross-repo relative imports work
-WORKDIR /app
-COPY kalles-finance ./kalles-finance
-COPY kalles-traffic ./kalles-traffic
+# Kopiera den förbyggda koden för denna specifika tjänst
+COPY kalles-finance/dist ./dist
 
-WORKDIR /app/kalles-finance
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

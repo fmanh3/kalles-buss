@@ -1,11 +1,19 @@
+# Denna Dockerfile förutsätter att hela monorepot har byggts
+# och att byggkontexten är roten av monorepot.
+
 FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
+# Kopiera rotens package.json och package-lock.json
+COPY package.json ./package.json
+COPY package-lock.json ./package-lock.json
 
-COPY . .
+# Installera alla beroenden för monorepot
+# Använd npm ci för att säkerställa att exakta versioner från package-lock.json används
+RUN npm ci
 
-# BFF körs via ts-node i labbet för enkelhet
-CMD ["npx", "ts-node", "src/index.ts"]
+# Kopiera den förbyggda koden för denna specifika tjänst
+COPY kalles-customer-success/apps/bff/dist ./dist
+
+CMD ["node", "dist/index.js"]
