@@ -4,13 +4,11 @@ import { BankGateway } from './domain/gateways/bank-gateway';
 import { LiquidityService } from './domain/ledger/liquidity-service';
 import knex from 'knex';
 import config from '../knexfile';
-import * as dotenv from 'dotenv';
 import express from 'express';
 
-dotenv.config();
-
 async function start() {
-  const db = knex(config.development!);
+  const dbConfig = process.env.NODE_ENV === 'production' ? config.production : config.development;
+  const db = knex(dbConfig!);
   const billingEngine = new BillingEngine(db);
   const bankGateway = new BankGateway(db);
   const liquidityService = new LiquidityService(db);

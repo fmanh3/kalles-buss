@@ -16,4 +16,10 @@ RUN npm ci
 # Kopiera den förbyggda koden för denna specifika tjänst
 COPY kalles-finance/dist ./dist
 
-CMD ["node", "dist/index.js"]
+# Kopiera databasmigrationerna
+COPY kalles-finance/migrations ./dist/migrations
+
+# Kopiera start-scriptet
+COPY kalles-finance/run.sh .
+
+CMD ["./run.sh"]

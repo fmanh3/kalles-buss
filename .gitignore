@@ -41,3 +41,4 @@ kalles-governance_TRASHED
 ehthumbs.db
 Thumbs.db
 \n# Screenshots\n*.png
+**/node_modules

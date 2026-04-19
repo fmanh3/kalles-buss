@@ -32,7 +32,9 @@ steps:
     '--image', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID',
     '--region', 'europe-west1',
     '--platform', 'managed',
-    '--quiet'
+    '--quiet',
+    '--add-cloudsql-instances=joakim-hansson-lab:europe-west1:kalles-finance-97d0dd7d',
+    '--set-env-vars=DB_USER=kalles_finance_user,DB_PASSWORD=kalles_finance_password_local,DB_NAME=kalles_finance,NODE_ENV=production'
   ]
 
 images:
