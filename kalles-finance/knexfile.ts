@@ -38,4 +38,8 @@ const config: { [key: string]: Knex.Config } = {
   }
 };
 
-module.exports = config;
+export default config;
+// Knex CLI support
+if (typeof module !== 'undefined') {
+  module.exports = config;
+}
