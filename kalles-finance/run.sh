@@ -9,7 +9,7 @@ fi
 echo "--- [kalles-finance] Environment: $NODE_ENV ---"
 
 echo "--- [kalles-finance] Running Database Migrations ---"
-npx knex migrate:latest --knexfile dist/knexfile.js
+npx knex migrate:latest --knexfile dist/knexfile.js --env production
 
 echo "--- [kalles-finance] Starting Application ---"
-node dist/index.js
+node dist/src/index.js
