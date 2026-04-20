@@ -3,7 +3,7 @@ import { BillingEngine } from './domain/billing/billing-engine';
 import { BankGateway } from './domain/gateways/bank-gateway';
 import { LiquidityService } from './domain/ledger/liquidity-service';
 import knex from 'knex';
-import config from '../knexfile';
+import config = require('../knexfile');
 import express from 'express';
 
 async function start() {
