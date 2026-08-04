@@ -1,0 +1,65 @@
+.safety-check-container {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.safety-check-container h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--danger-color);
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.checklist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--secondary-color);
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.photo-section {
+  margin-bottom: 1.5rem;
+}
+
+.camera-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.camera-btn.success {
+  background-color: var(--success-color);
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-fail {
+  background-color: white;
+  color: var(--danger-color);
+  border: 2px solid var(--danger-color);
+  flex: 1;
+}
+
+.btn-pass {
+  background-color: var(--success-color);
+  color: white;
+  flex: 2;
+}

@@ -1,0 +1,41 @@
+{
+  "id": "scenario-genesis",
+  "metadata": {
+    "name": "Scenario 1: The Genesis (Transmodel Edition)",
+    "description": "Initial setup with Garages, Blocks, and qualified roster. Validates Transmodel-compliant scheduling.",
+    "createdAt": "2026-04-26T12:00:00Z",
+    "createdBy": "QA-Architect"
+  },
+  "initialState": {
+    "finance": {
+      "startingCashSek": 5000000
+    },
+    "hr": {
+      "roster": [
+        { "id": "DRIVER-007", "name": "Kalle Karlsson", "pnr": "19800101-ABCD", "competences": ["KÖRKORT-D", "YKB", "BUSS-A"] },
+        { "id": "DRIVER-101", "name": "Anna Andersson", "pnr": "19920512-DEFG", "competences": ["KÖRKORT-D", "YKB", "BUSS-A"] },
+        { "id": "DRIVER-202", "name": "Sven Svensson", "pnr": "19751130-HIJK", "competences": ["KÖRKORT-D", "YKB", "BUSS-A"] }
+      ]
+    },
+    "fleet": [
+      { "vehicleId": "BUSS-101", "vin": "VIN-B101", "odometerKm": 12000, "depotId": "Garage:Norrtalje" },
+      { "vehicleId": "BUSS-102", "vin": "VIN-B102", "odometerKm": 8500, "depotId": "Garage:Norrtalje" },
+      { "vehicleId": "BUSS-103", "vin": "VIN-B103", "odometerKm": 14900, "depotId": "Garage:Norrtalje" }
+    ],
+    "garages": [
+      {
+        "id": "Garage:Norrtalje",
+        "name": "Norrtälje Bussdepå (Vigelsjö)",
+        "points": [
+          { "id": "GaragePoint:Norrtalje:GP1", "name": "GP1 - Laddplats", "type": "ELECTRIC_CHARGING" },
+          { "id": "GaragePoint:Norrtalje:GP2", "name": "GP2 - Serviceplats", "type": "SERVICE" }
+        ]
+      }
+    ]
+  },
+  "stimuli": {
+    "kodaTapeDate": "2023-11-20",
+    "weatherDate": "2023-11-20",
+    "scriptedChaos": []
+  }
+}

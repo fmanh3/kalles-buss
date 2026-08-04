@@ -1,0 +1,245 @@
+.tactical-container.light-theme {
+  display: block; 
+  position: relative;
+  /* Force exact height to prevent Leaflet from collapsing to 0px */
+  height: calc(100vh - var(--header-height, 64px));
+  width: 100%;
+  background-color: var(--bg);
+  overflow: hidden;
+}
+
+.tactical-map-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e5e5e5;
+  z-index: 1; /* Lowest */
+}
+
+/* Overlay Sidebar */
+.tactical-sidebar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 340px;
+  background-color: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 2000; /* Above Leaflet controls */
+  box-shadow: 4px 0 16px rgba(0,0,0,0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tactical-sidebar-overlay.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  min-height: 64px;
+}
+
+.tactical-sidebar-overlay h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.toggle-sidebar-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toggle-sidebar-btn:hover {
+  background: var(--bg);
+  color: var(--danger);
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+/* Floating Filter Button */
+.floating-filter-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.floating-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.line-filter {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.line-filter h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.line-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.line-checkbox input {
+  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+.checkbox-label {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.bus-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.bus-list h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.bus-card {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 4px solid transparent;
+}
+
+.bus-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.bus-card.active {
+  background-color: var(--primary-light);
+  border-color: var(--primary);
+  border-left-color: var(--primary);
+}
+
+.bus-card.status-delayed { border-left-color: var(--danger); }
+.bus-card.status-on_time { border-left-color: var(--success); }
+.bus-card.status-early { border-left-color: var(--warning); }
+
+.bus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bus-id {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-main);
+}
+
+.bus-status {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.status-delayed .bus-status { background: #fee2e2; color: var(--danger); }
+.status-on_time .bus-status { background: #d1fae5; color: var(--success); }
+.status-early .bus-status { background: #fef3c7; color: var(--warning); }
+
+.bus-details {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.delay-alert {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-info {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  background: var(--card);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  display: inline-block;
+  margin-top: 4px;
+}
+

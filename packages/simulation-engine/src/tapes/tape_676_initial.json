@@ -1,0 +1,26 @@
+[
+  {
+    "timestamp": "2026-04-23T08:00:00.000Z",
+    "lineId": "676",
+    "vehicleId": "BUSS-101",
+    "gps": { "latitude": 59.758, "longitude": 18.700 },
+    "delaySeconds": 0,
+    "occupancy": 15
+  },
+  {
+    "timestamp": "2026-04-23T08:05:00.000Z",
+    "lineId": "676",
+    "vehicleId": "BUSS-101",
+    "gps": { "latitude": 59.740, "longitude": 18.680 },
+    "delaySeconds": 120,
+    "occupancy": 25
+  },
+  {
+    "timestamp": "2026-04-23T08:10:00.000Z",
+    "lineId": "676",
+    "vehicleId": "BUSS-101",
+    "gps": { "latitude": 59.700, "longitude": 18.600 },
+    "delaySeconds": 300,
+    "occupancy": 40
+  }
+]

@@ -1,0 +1,17 @@
+steps:
+- name: 'node:22'
+  entrypoint: 'sh'
+  args: ['-c', 'npm ci && npm run build --workspace=packages/shared-utils && npm run build --workspace=packages/simulation-engine']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG',
+    '-f', 'packages/simulation-engine/Dockerfile',
+    '.'
+  ]
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG']
+images:
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG'

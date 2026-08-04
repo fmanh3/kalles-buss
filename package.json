@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc -b --force"
+    "build": "tsc -b --force && npm run build --workspace=bff && npm run build --workspace=portal && npm run build --workspace=simulation-control"
   },
   "workspaces": [
     "packages/*",
     "poc/*",
-    "kalles-finance",
     "kalles-customer-success/apps/*"
   ],
   "dependencies": {
@@ -16,6 +15,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "knex": "^3.2.6",
+    "lucide-react": "^1.28.0",
     "pg": "^8.20.0",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"

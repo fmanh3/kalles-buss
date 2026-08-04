@@ -5,15 +5,24 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Kopiera rotens package.json och package-lock.json
-COPY package.json ./package.json
-COPY package-lock.json ./package-lock.json
+# 1. Kopiera monorepo-konfiguration
+COPY package.json package-lock.json ./
 
-# Installera alla beroenden för monorepot
-# Använd npm ci för att säkerställa att exakta versioner från package-lock.json används
-RUN npm ci
+# 2. Kopiera interna paket (både definition och byggd kod)
+COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
+COPY packages/shared-utils/dist ./packages/shared-utils/dist
 
-# Kopiera den förbyggda koden för denna specifika tjänst
+# 3. Kopiera tjänstens definition
+COPY packages/kalles-hr/package.json ./packages/kalles-hr/package.json
+
+# 4. Installera alla beroenden för monorepot i produktion
+RUN npm ci --production
+
+# 5. Kopiera den förbyggda koden och skript för denna specifika tjänst
 COPY packages/kalles-hr/dist ./dist
+COPY packages/kalles-hr/run.sh .
 
-CMD ["node", "dist/index.js"]
+# 6. Säkerställ att startskriptet är körbart
+RUN chmod +x run.sh
+
+CMD ["./run.sh"]

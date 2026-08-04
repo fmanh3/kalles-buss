@@ -2,13 +2,13 @@
   "files": [],
   "references": [
     { "path": "packages/shared-utils" },
+    { "path": "packages/adapters" },
     { "path": "packages/kalles-hr" },
     { "path": "packages/kalles-traffic" },
     { "path": "packages/kalles-energy-depot" },
-    { "path": "kalles-finance" },
+    { "path": "packages/kalles-finance" },
+    { "path": "packages/simulation-engine" },
     { "path": "poc/consumer" },
-    { "path": "poc/provider" },
-    { "path": "kalles-customer-success/apps/bff" },
-    { "path": "kalles-customer-success/apps/portal" }
+    { "path": "poc/provider" }
   ]
 }

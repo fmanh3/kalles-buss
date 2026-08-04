@@ -1,41 +1,135 @@
 steps:
-# 1. Install all monorepo dependencies
+# 0. Installera och Bygg hela monorepot
 - name: 'node:22'
-  entrypoint: 'npm'
-  args: ['install']
+  entrypoint: 'sh'
+  args: 
+    - '-c'
+    - 'npm ci && npm run build'
 
-# 2. Build all services (to ensure dependencies are built)
-- name: 'node:22'
-  entrypoint: 'npm'
-  args: ['run', 'build']
-
-# 3. Build the Docker image for kalles-finance
+# 1. Bygg Finance Image
 - name: 'gcr.io/cloud-builders/docker'
   args: [
     'build',
-    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID',
-    '-f', 'kalles-finance/Dockerfile',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$_IMAGE_TAG',
+    '-f', 'packages/kalles-finance/Dockerfile',
     '.'
   ]
 
-# 4. Push the image to Artifact Registry
+# 2. Push Finance Image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID']
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$_IMAGE_TAG']
 
-# 5. Deploy to Cloud Run
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: gcloud
+# 3. Bygg HR Image
+- name: 'gcr.io/cloud-builders/docker'
   args: [
-    'run',
-    'deploy',
-    'kalles-finance',
-    '--image', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID',
-    '--region', 'europe-west1',
-    '--platform', 'managed',
-    '--quiet',
-    '--add-cloudsql-instances=joakim-hansson-lab:europe-west1:kalles-finance-97d0dd7d',
-    '--set-env-vars=DB_USER=kalles_finance_user,DB_PASSWORD=kalles_finance_password_local,DB_NAME=kalles_finance,NODE_ENV=production'
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-hr:$_IMAGE_TAG',
+    '-f', 'packages/kalles-hr/Dockerfile',
+    '.'
   ]
 
+# 4. Push HR Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-hr:$_IMAGE_TAG']
+
+# 5. Bygg Traffic Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-traffic:$_IMAGE_TAG',
+    '-f', 'packages/kalles-traffic/Dockerfile',
+    '.'
+  ]
+
+# 6. Push Traffic Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-traffic:$_IMAGE_TAG']
+
+# 9. Bygg Energy Depot Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-energy-depot:$_IMAGE_TAG',
+    '-f', 'packages/kalles-energy-depot/Dockerfile',
+    '.'
+  ]
+
+# 10. Push Energy Depot Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-energy-depot:$_IMAGE_TAG']
+
+# 11. Bygg BFF Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-bff:$_IMAGE_TAG',
+    '-f', 'kalles-customer-success/apps/bff/Dockerfile',
+    '.'
+  ]
+
+# 12. Push BFF Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-bff:$_IMAGE_TAG']
+
+# 13. Bygg Portal Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-portal:$_IMAGE_TAG',
+    '-f', 'kalles-customer-success/apps/portal/Dockerfile',
+    '.'
+  ]
+
+# 14. Push Portal Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-portal:$_IMAGE_TAG']
+
+# 15. Bygg Adapters Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-adapters:$_IMAGE_TAG',
+    '-f', 'packages/adapters/Dockerfile',
+    '.'
+  ]
+
+# 16. Push Adapters Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-adapters:$_IMAGE_TAG']
+
+# 17. Bygg Simulation Control Image (Host Dashboard)
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG',
+    '-f', 'kalles-customer-success/apps/simulation-control/Dockerfile',
+    '.'
+  ]
+
+# 18. Push Simulation Control Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG']
+
+# 19. Bygg Simulation Engine Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG',
+    '-f', 'packages/simulation-engine/Dockerfile',
+    '.'
+  ]
+
+# 20. Push Simulation Engine Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG']
+
 images:
-- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$BUILD_ID'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-finance:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-hr:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-traffic:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-energy-depot:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-bff:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-portal:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-adapters:$_IMAGE_TAG'
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-engine:$_IMAGE_TAG'

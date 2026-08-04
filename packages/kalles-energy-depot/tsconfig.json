@@ -4,6 +4,9 @@
     "outDir": "./dist",
     "allowJs": true
   },
-  "include": ["src/**/*", "knexfile.cjs"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "migrations/**/*", "knexfile.cjs"],
+  "exclude": ["node_modules", "dist", "src/test"],
+  "references": [
+    { "path": "../shared-utils" }
+  ]
 }

@@ -1,0 +1,31 @@
+{
+  "name": "@kalles-buss/simulation-engine",
+  "version": "1.0.0",
+  "description": "The World Engine - Stochastic event-replay and chaos simulator",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kalles-buss/shared-utils": "1.0.0",
+    "7zip-bin": "^5.2.0",
+    "axios": "^1.6.8",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^4.19.2",
+    "gtfs-realtime-bindings": "^1.1.1",
+    "knex": "^3.2.10",
+    "node-7z": "^3.0.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/node-7z": "^2.1.11",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

@@ -10,11 +10,12 @@ export declare class PubSubClient {
      */
     ensureTopic(topicName: string): Promise<void>;
     /**
-     * Publicerar ett meddelande asynkront.
+     * Publicerar ett meddelande asynkront och skickar med correlationId (Trace).
      */
     publish(topicName: string, data: any): Promise<string>;
     /**
      * Skapar en prenumeration för att kunna demonstrera "The Loop".
+     * Knyter inkommande Pub/Sub meddelanden till rätt Trace ID.
      */
     subscribe(topicName: string, subscriptionName: string, handler: (data: any) => void): Promise<void>;
 }

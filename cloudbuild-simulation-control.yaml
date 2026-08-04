@@ -1,0 +1,26 @@
+steps:
+# 1. Installera beroenden
+- name: 'node:22'
+  entrypoint: 'npm'
+  args: ['ci']
+
+# 2. Bygg frontend
+- name: 'node:22'
+  entrypoint: 'npm'
+  args: ['run', 'build', '--workspace=simulation-control']
+
+# 3. Bygg docker
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG',
+    '-f', 'kalles-customer-success/apps/simulation-control/Dockerfile',
+    '.'
+  ]
+
+# 4. Push
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG']
+
+images:
+- 'europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-simulation-control:$_IMAGE_TAG'

@@ -40,5 +40,11 @@ kalles-governance_TRASHED
 .Trashes
 ehthumbs.db
 Thumbs.db
-\n# Screenshots\n*.png
+
+# Screenshots
+*.png
 **/node_modules
+
+# Exclude massive local files
+/kalle.zip
+/infrastructure/gcp/.terraform/

@@ -1,0 +1,116 @@
+/**
+ * 008_hr_events_audit.js
+ *
+ * domain_events  – Immutabel event store för HR-domänen
+ * audit_events   – Oföränderlig åtkomstlogg (ej persondata i klartext)
+ *
+ * Event store:
+ *   Events med persondata krypteras med personalDEK eller healthDEK
+ *   beroende på dataklass. Eventet finns kvar i loggen efter crypto shredding
+ *   men payload_encrypted är då permanent oläsbart.
+ *
+ *   stream_id = "<aggregateType>:<aggregateId>", t.ex. "Employee:uuid-..."
+ *   stream_version möjliggör optimistisk låsning per aggregat-stream.
+ *
+ * Audit log:
+ *   Loggar läsåtkomst (READ), skrivoperationer och GDPR-händelser.
+ *   Åtkomst till Artikel 9-aggregat genererar ALLTID en audit-rad.
+ *   Innehåller ej persondata – enbart vem, vad, när, mot vilket aggregat.
+ */
+
+exports.up = async (knex) => {
+
+  // ── Domain Events ─────────────────────────────────────────────────────────
+
+  await knex.schema.createTable('domain_events', (t) => {
+    t.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'))
+
+    // "<AggregateType>:<aggregateId>" – partitioneringsnyckel för eventstream
+    t.string('stream_id', 200).notNullable()
+    t.integer('stream_version').notNullable()
+
+    t.string('event_type', 100).notNullable()   // "EmployeeHired", "CertificationGranted" …
+
+    // Events utan persondata – klartext JSON (t.ex. VehicleTypeDecommissioned)
+    t.jsonb('payload').nullable()
+
+    // Events med persondata – krypterad JSON
+    // Krypteras med personalDEK (Artikel 6) eller healthDEK (Artikel 9)
+    t.text('payload_encrypted').nullable()
+    t.string('encryption_key_type', 20).nullable()
+    t.check(`encryption_key_type IS NULL OR encryption_key_type IN ('PERSONAL','HEALTH')`)
+
+    // Denormaliserat för att hitta alla events per person utan dekryptering
+    // (t.ex. vid GDPR-radering eller audit)
+    t.uuid('employee_id_ref').nullable()
+
+    t.timestamp('occurred_at').notNullable()
+    t.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+
+    // Optimistisk låsning: en stream kan inte ha två events med samma version
+    t.unique(['stream_id', 'stream_version'])
+  })
+
+  await knex.schema.raw(`
+    CREATE INDEX idx_de_stream_id    ON domain_events (stream_id);
+    CREATE INDEX idx_de_event_type   ON domain_events (event_type);
+    CREATE INDEX idx_de_employee_ref ON domain_events (employee_id_ref)
+      WHERE employee_id_ref IS NOT NULL;
+    CREATE INDEX idx_de_occurred_at  ON domain_events (occurred_at);
+
+    -- Partiellt index för cross-domain events (ej krypterade, konsumeras av andra domäner)
+    CREATE INDEX idx_de_crossdomain  ON domain_events (event_type, occurred_at)
+      WHERE payload IS NOT NULL AND payload_encrypted IS NULL;
+  `)
+
+  // ── Audit Events ──────────────────────────────────────────────────────────
+
+  await knex.schema.createTable('audit_events', (t) => {
+    t.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'))
+    t.timestamp('occurred_at').notNullable().defaultTo(knex.fn.now())
+
+    // actor_id är employee UUID eller strängen 'SYSTEM'
+    t.string('actor_id', 36).notNullable()
+    t.string('actor_role', 30).notNullable()
+    t.check(
+      `actor_role IN ('LEVEL_1','LEVEL_2','LEVEL_3','LEVEL_4','LEVEL_5','SYSTEM')`
+    )
+
+    t.string('action', 30).notNullable()
+    t.check(
+      `action IN ('READ','CREATE','UPDATE','DELETE','EXPORT','KEY_DESTROYED','ACCESS_DENIED')`
+    )
+
+    t.string('aggregate_type', 50).notNullable()  // "HealthRecord", "SickLeaveMedicalRecord" …
+    t.string('aggregate_id', 36).notNullable()
+
+    // Vems data berördes – för att kunna lista alla åtkomster per person
+    t.uuid('employee_id_ref').nullable()
+
+    t.inet('ip_address').nullable()
+    t.jsonb('metadata').nullable()   // ytterligare kontext, aldrig persondata
+  })
+
+  await knex.schema.raw(`
+    -- Audit-tabellen ska ALDRIG uppdateras eller raderas – enforcea med RLS i PostgreSQL
+    -- ALTER TABLE audit_events ENABLE ROW LEVEL SECURITY;
+    -- Sätt policy som tillåter INSERT men nekar UPDATE/DELETE för applikationsrollen.
+
+    CREATE INDEX idx_ae_occurred_at   ON audit_events (occurred_at);
+    CREATE INDEX idx_ae_actor         ON audit_events (actor_id, occurred_at);
+    CREATE INDEX idx_ae_employee_ref  ON audit_events (employee_id_ref)
+      WHERE employee_id_ref IS NOT NULL;
+    CREATE INDEX idx_ae_aggregate     ON audit_events (aggregate_type, aggregate_id);
+    CREATE INDEX idx_ae_action        ON audit_events (action, occurred_at);
+
+    -- Snabb filtrering på Artikel 9-åtkomst
+    CREATE INDEX idx_ae_artikel9      ON audit_events (occurred_at)
+      WHERE aggregate_type IN ('HealthRecord','SickLeaveMedicalRecord',
+                               'health_declarations','medical_certificates','rehab_plans');
+  `)
+}
+
+exports.down = async (knex) => {
+  await knex.schema.dropTableIfExists('audit_events')
+  await knex.schema.dropTableIfExists('domain_events')
+}

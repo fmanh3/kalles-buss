@@ -1,0 +1,104 @@
+.depot-dashboard {
+  padding: 32px;
+  background-color: var(--bg);
+  min-height: 100vh;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.depot-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.maintenance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.maintenance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary);
+}
+
+.maintenance-item.warning {
+  border-left-color: var(--danger);
+  background: #fef2f2;
+}
+
+.m-bus {
+  font-weight: 700;
+  color: var(--text-main);
+  width: 80px;
+}
+
+.m-task {
+  flex: 1;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.m-status {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.m-status.scheduled {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.fleet-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fleet-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fleet-status-row:last-child {
+  border-bottom: none;
+}
+
+.status-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.status-count {
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.dot.green { background-color: var(--success); }
+.dot.yellow { background-color: var(--warning); }
+.dot.red { background-color: var(--danger); }

@@ -21,3 +21,12 @@ Feature: CFO Agent - Tax Compliance & VAT (Skatt & Moms)
     Then I should automatically split the booking between deductible and non-deductible accounts
     And I should correctly adjust the "Momslyft" (VAT deduction) according to current Swedish rules
     And I should notify the employee of the adjustment
+
+  Scenario: Setting aside profit to a Periodiseringsfond (Tax strategy)
+    Given the end of the fiscal year is reached
+    And the preliminary Profit Before Tax (Resultat före skatt) is 2,000,000 SEK
+    When the CFO Agent executes the tax optimization strategy
+    Then it should propose allocating 25% of the profit (500,000 SEK) to a "Periodiseringsfond"
+    And it should record a debit to "8810 Förändring av periodiseringsfond"
+    And it should record a credit to "2110 Periodiseringsfonder"
+    And it should calculate the deferred corporate tax (Bolagsskatt) accordingly

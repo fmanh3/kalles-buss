@@ -1,4 +1,4 @@
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
 
 export interface OptimizationStrategy {
   strategy: 'SPOT_PRICE_HEDGING' | 'LOAD_BALANCING';

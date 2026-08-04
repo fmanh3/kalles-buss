@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PubSubClient = void 0;
 const pubsub_1 = require("@google-cloud/pubsub");
 const dotenv = __importStar(require("dotenv"));
+const observability_1 = require("./observability");
 dotenv.config();
 /**
  * Infrastruktur-wrapper för GCP Pub/Sub.
@@ -55,44 +56,59 @@ class PubSubClient {
     async ensureTopic(topicName) {
         const [exists] = await this.pubsub.topic(topicName).exists();
         if (!exists) {
-            console.log(`[PubSub] Skapar topic: ${topicName}`);
+            observability_1.Logger.info(`[PubSub] Skapar topic: ${topicName}`);
             await this.pubsub.createTopic(topicName);
         }
     }
     /**
-     * Publicerar ett meddelande asynkront.
+     * Publicerar ett meddelande asynkront och skickar med correlationId (Trace).
      */
     async publish(topicName, data) {
         await this.ensureTopic(topicName);
         const topic = this.pubsub.topic(topicName);
         const dataBuffer = Buffer.from(JSON.stringify(data));
+        const traceId = observability_1.tracingContext.getStore() || 'no-trace';
         try {
-            const messageId = await topic.publishMessage({ data: dataBuffer });
-            console.log(`[PubSub] Meddelande publicerat till ${topicName}. ID: ${messageId}`);
+            const messageId = await topic.publishMessage({
+                data: dataBuffer,
+                attributes: { 'x-correlation-id': traceId }
+            });
+            observability_1.Logger.info(`[PubSub] Meddelande publicerat till ${topicName}. ID: ${messageId}`);
             return messageId;
         }
         catch (error) {
-            console.error(`[PubSub] Fel vid publicering:`, error);
+            observability_1.Logger.error(`[PubSub] Fel vid publicering till ${topicName}:`, error);
             throw error;
         }
     }
     /**
      * Skapar en prenumeration för att kunna demonstrera "The Loop".
+     * Knyter inkommande Pub/Sub meddelanden till rätt Trace ID.
      */
     async subscribe(topicName, subscriptionName, handler) {
         await this.ensureTopic(topicName);
         const [subExists] = await this.pubsub.subscription(subscriptionName).exists();
         if (!subExists) {
-            console.log(`[PubSub] Skapar prenumeration: ${subscriptionName}`);
+            observability_1.Logger.info(`[PubSub] Skapar prenumeration: ${subscriptionName}`);
             await this.pubsub.topic(topicName).createSubscription(subscriptionName);
         }
         const subscription = this.pubsub.subscription(subscriptionName);
         subscription.on('message', (message) => {
-            const data = JSON.parse(message.data.toString());
-            handler(data);
-            message.ack();
+            const traceId = message.attributes?.['x-correlation-id'] || 'no-trace';
+            observability_1.tracingContext.run(traceId, () => {
+                const data = JSON.parse(message.data.toString());
+                observability_1.Logger.info(`[PubSub] Mottog händelse från ${topicName}`);
+                try {
+                    handler(data);
+                    message.ack();
+                }
+                catch (error) {
+                    observability_1.Logger.error(`[PubSub] Internt fel vid hantering av meddelande:`, error);
+                    message.nack();
+                }
+            });
         });
-        console.log(`[PubSub] Lyssnar på ${subscriptionName}...`);
+        observability_1.Logger.info(`[PubSub] Lyssnar på ${subscriptionName}...`);
     }
 }
 exports.PubSubClient = PubSubClient;

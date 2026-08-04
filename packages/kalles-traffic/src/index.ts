@@ -1,158 +1,179 @@
-// import { v4 as uuidv4 } from 'uuid';
+import { 
+  PubSubClient, 
+  tracingMiddleware, 
+  Logger, 
+  PassengerLoadUpdateSchema, 
+  CriticalFaultDetectedSchema,
+  WeatherAlertSchema
+} from '@kalles-buss/shared-utils';
 import express from 'express';
-// import knex from 'knex';
-// import config from '../knexfile';
-// import { PubSubClient } from '@kalles-buss/shared-utils';
-// import { BusPositionUpdatedSchema, type BusPositionUpdated } from './domain/events/bus-position-updated';
-// import { ApcEventSchema, type ApcEvent } from '../../kalles-finance/packages/shared-schemas/src/traffic-events';
+import knex from 'knex';
+import config from '../knexfile';
+import { ResourceSolverService } from './domain/orchestrator/resource-solver-service';
+import { EcoTrackerService } from './domain/orchestrator/eco-tracker-service';
+import { ScheduleService } from './domain/orchestrator/schedule-service';
+import { EnergyNegotiationListener } from './domain/orchestrator/energy-negotiation-listener';
+import { TrackingService } from './domain/orchestrator/tracking-service';
 
 async function start() {
-  // const db = Knex(config.development!);
-  
-  // Start a minimal heartbeat server for Cloud Run health checks
+  const dbConfig = process.env.NODE_ENV === 'production' ? config.production : config.development;
+  const db = knex(dbConfig!);
+  const pubsub = new PubSubClient();
+
+  const hrApiUrl = process.env.HR_API_URL || 'http://localhost:8081'; 
+  const resourceSolver = new ResourceSolverService(db, hrApiUrl);
+  const ecoTracker = new EcoTrackerService(db);
+  const scheduleService = new ScheduleService(db, resourceSolver, pubsub);
+  const energyNegotiationListener = new EnergyNegotiationListener(pubsub, scheduleService, resourceSolver, db);
+  const trackingService = new TrackingService(db);
+
   const app = express();
+  app.use(express.json());
+  app.use(tracingMiddleware);
+
   const port = process.env.PORT || 8080;
-  app.get('/', (req, res) => res.send('Kalles Buss Traffic Simulator is running! 🚌'));
-  app.listen(port, () => console.log(`[Health] Heartbeat server listening on port ${port}`));
-
-  console.log('--- KALLES BUSS: TRAFFIC CONTROL & APC SIMULATOR (Temporarily Disabled) ---');
   
-  // API: Fordonsstatus (Digital Tvilling Level 1)
-  // app.get('/vehicles/:id/status', async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     const vehicle = await db('vehicles').where({ id }).first();
-  //     const status = await db('vehicle_status').where({ vehicle_id: id }).first();
+  await energyNegotiationListener.startListening();
+
+  app.get('/', (req, res) => res.json({ status: 'UP', service: 'kalles-traffic', message: 'Core Orchestrator is live! 🚌', revision: process.env.K_REVISION || 'local' }));
+
+  // --- TACTICAL DASHBOARD API ---
+  app.get('/api/tactical/live-map', (req, res) => {
+    try {
+      const liveData = trackingService.getLiveMapData();
+      res.json(liveData);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- SANDBOX / SIMULATION SEEDING ---
+  app.post('/api/sandbox/seed', async (req, res) => {
+    Logger.info('[Sandbox] Seeding Traffic domain');
+    try {
+      const { fleet } = req.body;
+      if (fleet) {
+         scheduleService.setFleetHeuristics(fleet);
+      }
+
+      await db('eco_driving_stats').del();
+      await db('tours').del();
+      await db('blocks').del();
+      await db('journey_calls').del();
+      await db('service_journeys').del();
+      await db('scheduled_stop_points').del();
+      await db('lines').del();
+      res.json({ status: 'SUCCESS', message: 'Traffic plans and static network cleared' });
+    } catch (err: any) {
+      Logger.error(`[Sandbox] Seeding failed: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- CEO DASHBOARD API ---
+  app.get('/api/ceo/status', async (req, res) => {
+    try {
+      // 1. Get Block Coverage
+      const blocks = await db('blocks').select('*');
+      const totalBlocks = blocks.length;
+      const assignedBlocks = blocks.filter(b => b.assigned_vehicle_id !== null).length;
+      const unassignedBlocks = totalBlocks - assignedBlocks;
+
+      // 2. Fetch the detailed tours for the drill-down view
+      for (const block of blocks) {
+        block.tours = await db('tours').where({ block_id_new: block.id }).orderBy('sequence_in_block', 'asc');
+      }
+
+      // 3. Determine Status
+      let status = 'GREEN';
+      if (unassignedBlocks > 0) status = 'RED'; // Red if we have tours without buses
+
+      // The "Fleet Deficit" is implicitly unassignedBlocks, meaning we need X more buses to fulfill the schedule.
+      res.json({
+        domain: 'TRAFFIC',
+        status,
+        metrics: {
+          totalBlocks,
+          assignedBlocks,
+          unassignedBlocks,
+          deficit: unassignedBlocks
+        },
+        drilldown: blocks
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- INTERNAL DOMAIN LISTENERS ---
+  await pubsub.subscribe('traffic-events', 'traffic-scheduler-internal-sub', async (eventData: any) => {
+    try {
+      if (eventData.eventType === 'TimetableUpdated') {
+        await scheduleService.processTimetableUpdate(eventData);
+      }
+    } catch (error) {
+      Logger.error('[Traffic] Error processing timetable update:', error);
+    }
+  });
+
+  await pubsub.subscribe('telematics-events', 'traffic-telematics-internal-sub', async (eventData: any) => {
+    try {
+      if (eventData.eventType === 'VehicleTelemetryUpdate') {
+        // Call TrackingService to update the progress of the journey
+        await trackingService.processTelemetry(eventData);
+      }
+
+      if (eventData.eventType === 'PassengerLoadUpdate') {
+        const loadData = PassengerLoadUpdateSchema.parse(eventData);
+        if (loadData.isLoadAlert) Logger.warn(`[Traffic] LOAD ALERT for ${loadData.vehicleId}`);
+      }
       
-  //     if (!vehicle) {
-  //       return res.status(404).json({ error: 'Vehicle not found' });
-  //     }
+      if (eventData.eventType === 'CriticalFaultDetected') {
+        const faultData = CriticalFaultDetectedSchema.parse(eventData);
+        if (faultData.severity === 'CRITICAL') {
+           const tour = await db('tours').where({ assigned_vehicle_id: faultData.vehicleId, status: 'IN_PROGRESS' }).first();
+           if (tour) await resourceSolver.handleSafetyCheckFail(tour.id, faultData.vehicleId);
+        }
+      }
+    } catch (error) {
+      Logger.error('[Traffic] Error processing telematics event:', error);
+    }
+  });
 
-  //     res.json({
-  //       id: vehicle.id,
-  //       model: vehicle.model_name,
-  //       type: vehicle.type,
-  //       capacity: vehicle.passenger_capacity,
-  //       battery: {
-  //         totalKwh: vehicle.battery_capacity_kwh,
-  //         currentSoc: status?.current_soc || 100,
-  //       },
-  //       location: {
-  //         lat: status?.current_lat,
-  //         lon: status?.current_lon
-  //       },
-  //       lastSeen: status?.last_telemetry_at
-  //     });
-  //   } catch (err: any) {
-  //     res.status(500).json({ error: err.message });
-  //   }
-  // });
+  await pubsub.subscribe('weather-events', 'traffic-weather-internal-sub', async (eventData: any) => {
+    try {
+      if (eventData.eventType === 'WeatherAlert') {
+        const alert = WeatherAlertSchema.parse(eventData);
+        if (alert.alertType === 'EXTREME_COLD') await resourceSolver.handleExtremeColdWeather();
+      }
+    } catch (error) {
+      Logger.error('[Traffic] Error processing weather event:', error);
+    }
+  });
 
+  // --- REST API ---
+  app.post('/api/orchestrator/tours/:id/assign-driver', async (req, res) => {
+    try {
+      const { driverId, requiredVehicleType } = req.body;
+      const result = await resourceSolver.assignDriverToTour(req.params.id, driverId, requiredVehicleType);
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
 
+  app.post('/api/orchestrator/tours/:id/finalize', async (req, res) => {
+    try {
+      const { energyConsumedKwh, regeneratedKwh } = req.body;
+      const result = await ecoTracker.finalizeTourAndCalculateEcoScore(req.params.id, energyConsumedKwh, regeneratedKwh);
+      await db('tours').where({ id: req.params.id }).update({ status: 'COMPLETED' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-  // const pubsub = new PubSubClient();
-  // const TELEMETRY_TOPIC = 'traffic-telemetry';
-  // const EVENTS_TOPIC = 'traffic-events';
-  // const APC_TOPIC = 'apc-events';
-  // const SUB_NAME = 'traffic-control-center-sub';
-
-
-
-  // await pubsub.subscribe(TELEMETRY_TOPIC, SUB_NAME, (event: BusPositionUpdated) => {
-  //   const result = BusPositionUpdatedSchema.safeParse(event);
-  //   if (result.success) {
-  //     console.log(`[Realtid] Buss ${event.busId} (Linje ${event.line}). Pos: ${event.location.lat.toFixed(3)}, ${event.location.lng.toFixed(3)}.`);
-  //   }
-  // });
-
-  // // Hållplatser för Linje 676
-  // const routeStops = [
-  //   { name: 'Norrtälje Busstation', lat: 59.758, lng: 18.700, distanceFromStart: 0, boarding: 25, alighting: 0 },
-  //   { name: 'Campus Roslagen', lat: 59.740, lng: 18.680, distanceFromStart: 3, boarding: 10, alighting: 2 },
-  //   { name: 'Danderyds Sjukhus', lat: 59.392, lng: 18.040, distanceFromStart: 65, boarding: 5, alighting: 15 },
-  //   { name: 'Tekniska Högskolan', lat: 59.350, lng: 18.070, distanceFromStart: 73, boarding: 0, alighting: 23 } // Slutstation
-  // ];
-
-  // let currentStopIndex = 0;
-  // let tourId = `TOUR-${uuidv4().substring(0,8)}`;
-  // let correlationId = uuidv4();
-  // let currentOccupancy = 0;
-
-  // console.log(`
-// [Trafik] Påbörjar ny tur ${tourId} på linje 676...`);
-
-  // // Bussen kör...
-  // setInterval(async () => {
-  //   const stop = routeStops[currentStopIndex];
-  //   if (!stop) return; // TS guard
-    
-  //   // 1. Skicka Telemetri att vi är vid hållplatsen
-  //   const telemetry: BusPositionUpdated = {
-  //     eventId: uuidv4(),
-  //     correlationId: correlationId,
-  //     timestamp: new Date().toISOString(),
-  //     busId: 'BUSS-101',
-  //     line: '676',
-  //     location: { lat: stop.lat, lng: stop.lng },
-  //     status: { speed: 0, batteryPercentage: 80 - stop.distanceFromStart * 0.1 } // Stannat vid hållplats
-  //   };
-
-  //   await pubsub.publish(TELEMETRY_TOPIC, BusPositionUpdatedSchema.parse(telemetry));
-
-  //   // 2. Skicka APC (Automatic Passenger Counting) data för hållplatsen
-  //   currentOccupancy = currentOccupancy + stop.boarding - stop.alighting;
-  //   const apcEvent: ApcEvent = {
-  //     eventId: uuidv4(),
-  //     correlationId: correlationId,
-  //     timestamp: new Date().toISOString(),
-  //     vehicleRef: 'BUSS-101',
-  //     journeyRef: tourId,
-  //     lineRef: '676',
-  //     stopPointRef: stop.name,
-  //     boarding: stop.boarding,
-  //     alighting: stop.alighting,
-  //     occupancy: currentOccupancy
-  //   };
-
-  //   console.log(`[Trafik/APC] Ankom ${stop.name}. Påstigande: ${stop.boarding}, Avstigande: ${stop.alighting}. (Totalt ombord: ${currentOccupancy})`);
-  //   await pubsub.publish(APC_TOPIC, ApcEventSchema.parse(apcEvent));
-
-  //   // 3. Kolla om detta var sista hållplatsen
-  //   if (currentStopIndex === routeStops.length - 1) {
-  //     console.log(`
-// [Trafik] Buss BUSS-101 har ankommit ändhållplatsen (${stop.name})! Avslutar tur ${tourId}...`);
-      
-  //     const tourCompletedEvent = {
-  //       eventId: uuidv4(),
-  //       correlationId: correlationId,
-  //       timestamp: new Date().toISOString(),
-  //       tourId: tourId,
-  //       line: '676',
-  //       busId: 'BUSS-101',
-  //       driverId: 'FÖRARE-007',
-  //       distanceKm: stop.distanceFromStart,
-  //       status: 'COMPLETED'
-  //     };
-
-  //     await pubsub.publish(EVENTS_TOPIC, tourCompletedEvent);
-  //     console.log(`[Trafik] Skickade TrafficTourCompleted event för ${stop.distanceFromStart} km.
-// `);
-      
-  //     // Återställ för en ny tur (simulerar vändning)
-  //     currentStopIndex = 0;
-  //     tourId = `TOUR-${uuidv4().substring(0,8)}`;
-  //     correlationId = uuidv4();
-  //     currentOccupancy = 0;
-  //     console.log(`
-// [Trafik] Påbörjar ny tur ${tourId} på linje 676...`);
-  //   } else {
-  //     // Kör vidare till nästa hållplats
-  //     currentStopIndex++;
-  //   }
-
-  // }, 4000); // Rör sig till ny hållplats var 4:e sekund
+  app.listen(port, () => Logger.info(`[Traffic] API listening on port ${port}`));
 }
 
-if (require.main === module) {
-  start().catch(console.error);
-}
+start().catch(console.error);

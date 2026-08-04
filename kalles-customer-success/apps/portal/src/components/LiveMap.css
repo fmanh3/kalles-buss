@@ -1,0 +1,51 @@
+.live-map-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  border-radius: inherit;
+  z-index: 1; /* Keep leaflet below modals/sidebars */
+}
+
+/* Make sure leaflet container takes full space */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: var(--bg); /* Light background for loading areas */
+}
+
+/* Custom Popup Styling */
+.bus-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.bus-popup-content {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-main);
+}
+
+.bus-popup-content strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.status-text.on_time { color: var(--success); font-weight: bold; }
+.status-text.delayed { color: var(--danger); font-weight: bold; }
+.status-text.early { color: var(--warning); font-weight: bold; }
+.status-text.unknown { color: var(--text-muted); }
+
+/* Make the custom marker pulse slightly when selected */
+.custom-bus-marker div {
+  transform-origin: center;
+}
+
+.leaflet-marker-icon.custom-bus-marker {
+  z-index: 1000 !important; /* Bring to front */
+}

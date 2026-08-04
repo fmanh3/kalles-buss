@@ -19,12 +19,11 @@ services:
   # --------------------------------------------------------------------------
   # Databases (PostgreSQL for each Domain)
   # --------------------------------------------------------------------------
-  # Finance DB
   finance-db:
     image: postgres:15-alpine
     container_name: kalles-finance-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: kalles_finance_user
       POSTGRES_PASSWORD: kalles_finance_password_local
@@ -34,12 +33,11 @@ services:
     networks:
       - kalles-net
 
-  # HR DB
   hr-db:
     image: postgres:15-alpine
     container_name: kalles-hr-db
     ports:
-      - "5433:5432"
+      - "5434:5432"
     environment:
       POSTGRES_USER: kalles_hr_user
       POSTGRES_PASSWORD: kalles_hr_password_local
@@ -49,12 +47,11 @@ services:
     networks:
       - kalles-net
 
-  # Traffic DB (with PostGIS for route calculations)
   traffic-db:
     image: postgis/postgis:15-3.3-alpine
     container_name: kalles-traffic-db
     ports:
-      - "5434:5432"
+      - "5435:5432"
     environment:
       POSTGRES_USER: kalles_traffic_user
       POSTGRES_PASSWORD: kalles_traffic_password_local
@@ -64,13 +61,69 @@ services:
     networks:
       - kalles-net
 
+  energy-db:
+    image: postgres:15-alpine
+    container_name: kalles-energy-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kalles_energy_user
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: kalles_energy_depot
+    volumes:
+      - energy-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  simulation-db:
+    image: postgres:15-alpine
+    container_name: kalles-simulation-db
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: kalles-simulation
+    volumes:
+      - simulation-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  payroll-db:
+    image: postgres:15-alpine
+    container_name: kalles-payroll-db
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_USER: kalles_payroll_user
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: kalles_payroll
+    volumes:
+      - payroll-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
+  process-db:
+    image: postgres:15-alpine
+    container_name: kalles-process-db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: kalles_process_user
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: kalles_process
+    volumes:
+      - process-db-data:/var/lib/postgresql/data
+    networks:
+      - kalles-net
+
   # --------------------------------------------------------------------------
   # Microservices
   # --------------------------------------------------------------------------
   kalles-finance:
     build:
       context: ..
-      dockerfile: kalles-finance/Dockerfile
+      dockerfile: packages/kalles-finance/Dockerfile
     container_name: kalles-finance-app
     depends_on:
       - pubsub-emulator
@@ -89,7 +142,7 @@ services:
   kalles-hr:
     build:
       context: ..
-      dockerfile: kalles-hr/Dockerfile
+      dockerfile: packages/kalles-hr/Dockerfile
     container_name: kalles-hr-app
     depends_on:
       - pubsub-emulator
@@ -108,8 +161,48 @@ services:
   kalles-traffic:
     build:
       context: ..
-      dockerfile: kalles-traffic/Dockerfile
+      dockerfile: packages/kalles-traffic/Dockerfile
     container_name: kalles-traffic-app
+    depends_on:
+      - pubsub-emulator
+      - traffic-db
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - DB_HOST=traffic-db
+      - DB_PORT=5432
+      - DB_USER=kalles_traffic_user
+      - DB_PASSWORD=kalles_traffic_password_local
+      - DB_NAME=kalles_traffic
+    networks:
+      - kalles-net
+
+  kalles-energy-depot:
+    build:
+      context: ../
+      dockerfile: packages/kalles-energy-depot/Dockerfile
+    container_name: kalles-energy-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pubsub-emulator
+      - energy-db
+    environment:
+      - PUBSUB_PROJECT_ID=kalles-buss-local
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - DB_HOST=energy-db
+      - DB_PORT=5432
+      - DB_USER=kalles_energy_user
+      - DB_PASSWORD=local_password
+      - DB_NAME=kalles_energy_depot
+    networks:
+      - kalles-net
+
+  kalles-adapters:
+    build:
+      context: ..
+      dockerfile: packages/adapters/Dockerfile
+    container_name: kalles-adapters-app
     depends_on:
       - pubsub-emulator
     environment:
@@ -126,3 +219,7 @@ volumes:
   finance-db-data:
   hr-db-data:
   traffic-db-data:
+  energy-db-data:
+  simulation-db-data:
+  payroll-db-data:
+  process-db-data:

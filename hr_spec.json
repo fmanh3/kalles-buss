@@ -1,0 +1,139 @@
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "metadata": {
+    "annotations": {
+      "run.googleapis.com/build-base-image": "europe-west1-docker.pkg.dev/serverless-runtimes/google-24/run/universal:public-image-next",
+      "run.googleapis.com/build-enable-automatic-updates": "false",
+      "run.googleapis.com/build-id": "33073c78-96b7-4668-9f2a-be77305c3410",
+      "run.googleapis.com/build-image-uri": "europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-hr",
+      "run.googleapis.com/build-name": "projects/625737625145/locations/europe-west1/builds/33073c78-96b7-4668-9f2a-be77305c3410",
+      "run.googleapis.com/build-source-location": "gs://run-sources-joakim-hansson-lab-europe-west1/services/kalles-hr/1776865751.562983-602771330ff045698171fd8201e87bdb.zip#1776865752183011",
+      "run.googleapis.com/client-name": "gcloud",
+      "run.googleapis.com/client-version": "565.0.0",
+      "run.googleapis.com/ingress": "all",
+      "run.googleapis.com/ingress-status": "all",
+      "run.googleapis.com/maxScale": "100",
+      "run.googleapis.com/operation-id": "978b4e0b-1ce8-4746-b314-21893f788e7b",
+      "run.googleapis.com/urls": "[\"https://kalles-hr-625737625145.europe-west1.run.app\",\"https://kalles-hr-w7fsmra4yq-ew.a.run.app\"]",
+      "serving.knative.dev/creator": "joakim.hansson@forefront.se",
+      "serving.knative.dev/lastModifier": "625737625145-compute@developer.gserviceaccount.com"
+    },
+    "creationTimestamp": "2026-04-01T13:47:16.750893Z",
+    "generation": 24,
+    "labels": {
+      "cloud.googleapis.com/location": "europe-west1"
+    },
+    "name": "kalles-hr",
+    "namespace": "625737625145",
+    "resourceVersion": "AAZQES5h+BA",
+    "selfLink": "/apis/serving.knative.dev/v1/namespaces/625737625145/services/kalles-hr",
+    "uid": "74704597-2007-4110-b76a-3655eacb1253"
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "autoscaling.knative.dev/maxScale": "100",
+          "autoscaling.knative.dev/minScale": "0",
+          "run.googleapis.com/client-name": "gcloud",
+          "run.googleapis.com/client-version": "565.0.0",
+          "run.googleapis.com/cloudsql-instances": "joakim-hansson-lab:europe-west1:kalles-hr-920ea374",
+          "run.googleapis.com/cpu-throttling": "true",
+          "run.googleapis.com/sessionAffinity": "false"
+        },
+        "labels": {
+          "client.knative.dev/nonce": "mvrluifztb",
+          "run.googleapis.com/startupProbeType": "Default"
+        }
+      },
+      "spec": {
+        "containerConcurrency": 80,
+        "containers": [
+          {
+            "env": [
+              {
+                "name": "DB_USER",
+                "value": "postgres"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "postgres_prod_password"
+              },
+              {
+                "name": "DB_NAME",
+                "value": "kalles-hr"
+              },
+              {
+                "name": "NODE_ENV",
+                "value": "production"
+              }
+            ],
+            "image": "europe-west1-docker.pkg.dev/joakim-hansson-lab/cloud-run-source-deploy/kalles-hr:20260422210002_manual",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http1"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "1000m",
+                "memory": "512Mi"
+              }
+            },
+            "startupProbe": {
+              "failureThreshold": 1,
+              "periodSeconds": 240,
+              "tcpSocket": {
+                "port": 8080
+              },
+              "timeoutSeconds": 240
+            }
+          }
+        ],
+        "serviceAccountName": "kalles-runtime-sa@joakim-hansson-lab.iam.gserviceaccount.com",
+        "timeoutSeconds": 300
+      }
+    },
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100
+      }
+    ]
+  },
+  "status": {
+    "address": {
+      "url": "https://kalles-hr-w7fsmra4yq-ew.a.run.app"
+    },
+    "conditions": [
+      {
+        "lastTransitionTime": "2026-04-22T19:03:03.102480Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastTransitionTime": "2026-04-22T19:03:01.882855Z",
+        "status": "True",
+        "type": "ConfigurationsReady"
+      },
+      {
+        "lastTransitionTime": "2026-04-22T19:03:03.060337Z",
+        "status": "True",
+        "type": "RoutesReady"
+      }
+    ],
+    "latestCreatedRevisionName": "kalles-hr-00024-97v",
+    "latestReadyRevisionName": "kalles-hr-00024-97v",
+    "observedGeneration": 24,
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100,
+        "revisionName": "kalles-hr-00024-97v"
+      }
+    ],
+    "url": "https://kalles-hr-w7fsmra4yq-ew.a.run.app"
+  }
+}

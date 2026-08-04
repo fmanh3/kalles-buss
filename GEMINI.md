@@ -1,97 +1,65 @@
 # Kalles Buss – Arkitektur- och konfigurationsramverk
 
-## Översikt
+## Huvudinstruktion till Kodningsagenten: Projekt "Kalles-Buss Autonomi"
 
-Kalles Buss är en mjukvarudefinierad plattform för upphandlad kollektivtrafik. Systemet är designat som en "Transport-as-Code"-lösning där hela verksamheten – från personalplanering till fordonsoptimering – styrs av agenter och policys. Den första operativa instansen av plattformen hanterar trafiken mellan **Norrtälje Resecentrum** och **Tekniska högskolan** i Stockholm på uppdrag av SL.
+### Övergripande Filosofi
+Du bygger ryggraden för världens första helt agent-drivna transportföretag. Arkitekturen vilar på två pelare:
 
-## Verksamhetsmodell (Elastic Scaling)
+*   **Dumb-Flow Automation:** Alla rutinmässiga, regelstyrda flöden (bokföring, tidrapportering, laddningsscheman, "Golden Base-layer" compliance) ska hanteras av deterministisk kod för att spara beräkningsresurser och garantera extrem tillförlitlighet.
+*   **The Elevator Principle (Hiss-principen):** Arkitekturen är skiktad för att hantera kognitiv belastning för både agenter och människor. Vi "åker hiss" mellan detaljnivå (Data/Funktion), samordning (Process) och strategi (Agent). Varje våning har ett välavgränsat kontextfönster.
+*   **Process-as-a-Domain:** Affärsprocesser (Onboarding, Offboarding, Incidenthantering) är en egen, fristående domän. Den agerar dirigent mellan agenter och funktionella domäner (HR, Depot, Finance).
+*   **Agentic Intelligence:** AI-agenter ingriper endast vid avvikelser, komplexa optimeringar och strategiska beslut som kräver avvägningar mellan flera domäner (t.ex. säkerhet vs. ekonomi vs. logistik).
 
-Verksamheten är designad för att vara resursagnostisk och skalas horisontellt utifrån deklarerad kapacitet:
+### Din roll som kodare
+Du ska implementera domänsystemen (Finance, HR, Depot, Traffic) som robusta, händelsestyrda moduler i ett Monorepo. Varje modul ska exponera ett gränssnittet som en intelligent Agent kan förstå och styra.
 
-- **Uppdragsgivare:** SL (Storstockholms Lokaltrafik).
-- **Linjesträckning:** Norrtälje Resecentrum ↔ Tekniska högskolan.
-- **Fordon & Personal:** Dimensioneras dynamiskt via topologifiler. Systemet optimerar driften oavsett om flottan består av 10 eller 1000 eldrivna bussar.
-- **Infrastruktur:** Depåer, laddstationer och verkstäder betraktas som externa tjänster med definierade API-gränssnitt och kapacitetsbegränsningar.
-- **Data-källa:** All tidtabellsdata hämtas via externa API:er (t.ex. Trafiklab/Samtrafiken) och utgör grunden för systemets planering.
+### Domänernas samspel (The Windshield Principle)
+När en avvikelse uppstår (t.ex. en sprucken ruta), ska systemet facilitera följande asynkrona flöde:
+1.  **Depot Agent:** Identifierar skadan (IoT/SafetyCheck), bedömer omedelbart körförbud och hämtar reparations-offerter.
+2.  **Traffic Agent:** Analyserar hur körförbudet påverkar omloppen (ex. Linje 676) och beräknar kostnaden för missad trafik eller insättande av reservbuss.
+3.  **Finance (CFO) Agent:** Kontrollerar bolagets likviditet och väger "reparera nu" mot "vänta 7 dagar" baserat på totalekonomisk påverkan och kassaflöde.
+4.  **Beslut & Förhandling:** Agenterna förhandlar fram en lösning. Vid konflikt styrs beslutet av hårdkodad bolagsprioritet: *Säkerhet > Regelefterlevnad > Intäkt > Kostnad.*
 
----
+### Arkitektonisk design: The Triple Ring & Anti-Corruption Layers
+Systemet är designat enligt principen om tre ringar för att skydda affärslogiken och möjliggöra asynkron agent-förhandling:
+1.  **Inner Ring (The Source of Truth):** Domänernas databaser (Double-Entry Ledger i Finance, Medical Vault i HR, Asset Master i Depot). Ändringar här sker endast via strikt validerade domän-tjänster.
+2.  **Middle Ring (Agentic Intelligence):** Domänlogiken, "The Repair Negotiator", "Resource Solver", etc. Här sker den kognitiva förhandlingen mellan agenterna.
+3.  **Outer Ring (Integration Adapters & ACL):** **Kritiskt mönster.** Inflöden från den fysiska och externa världen (Väderdata, Bankgirot, Skatteverket, Telematik från fordon, Kivra) hanteras av fristående **Integration Adapters**. Dessa agerar som ett Anti-Corruption Layer (ACL). De tar emot externt brus/format, transformerar det, och publicerar rena, interna, typ-säkra händelser (Events) på Event-bussen. Om ett externt API ändras, uppdateras endast adaptern, aldrig core-domänen.
 
-## Målbild för Agentdriven Drift
+### Arkitektoniska krav
 
-Kalles Buss fungerar som en testbädd där nästan all mjukvara utvecklas och driftas av agenter, styrda av policys definierade i ett centralt **governance-repo**.
-
-### Grundprinciper för Agenter
-
-1.  **Policy-as-Code (PaC):** Policys är inte bara dokument; de är exekverbara constraints. Agenter ska översätta textuella policys till unit-tester och guardrails i koden.
-2.  **Traceability (Spårbarhet):** Varje rad kod, varje schemaändring och varje operativt beslut ska kunna härledas till en specifik policy-paragraf i Governance-repot.
-3.  **Definition of Done (DoD):** En uppgift är klar först när koden är testad mot policys, dokumenterad för människor och inkluderar nödvändig observability (loggar/metrics).
-4.  **Enkelhet framför komplexitet:** Agenter ska prioritera läsbar kod och beprövade mönster (DDD) för att minimera kognitiv last för mänskliga granskare.
-
----
-
-## Arkitektur: Event-Driven & Decoupled
-
-Systemet kommunicerar via en distribuerad event-buss. Varje domän är en "Bounded Context" som reagerar på och publicerar händelser.
-
-### Exempel på kritiska Events:
-* **Planering:** `TrafikSchemaPublicerat`, `FörareTilldeladPass`.
-* **Operativt:** `BussAnkommitHållplats`, `LaddningPåbörjad`.
-* **Felhantering (Failure Events):** `LaddningMisslyckad`, `FörareEjTillgänglig`, `TidtabellsavvikelseIdentifierad`.
+*   **Modularitet & IaC:** Systemet ska kunna skala från en depå i Norrtälje till global expansion genom att infrastrukturen (Terraform) och koden (Docker/Cloud Run) är 100% reproducerbar.
+*   **Data Abstraction (Privacy by Design):** En domän exponerar aldrig sin rådata (särskilt HR-data & GDPR). Endast absolut nödvändiga insikter (t.ex. status "Tillgänglig/Ej Tillgänglig") delas mellan domänerna.
+*   **Events som språk:** All tvärfunktionell kommunikation sker via den asynkrona Event-bussen (GCP Pub/Sub). Core-domäner pratar aldrig direkt med externa parter, utan lyssnar på interna events från Outer Ring.
+*   **Audit & Retrospektiv (The Decision Log):** Varje agent-drivet beslut avger ett `DecisionEvent`. Detta fångas upp av en oberoende stödtjänst som oföränderligt arkiverar kontext, resonemang och utfall. Detta dataset används vid ledningsgruppens periodiska "retron" för att utvärdera agenternas arbete och förbättra regelverket.
+*   **Single Source of Truth:** `governance`-biblioteket i markdown är den absoluta och enda källan för affärsregler, bolagsstrategi och Use Cases (Gherkin).
 
 ---
 
-## Governance och Domänstruktur
+## Aktuell Status & Operativ Kontext
 
-Verksamheten delas upp i tydliga domäner som styrs av versionshanterade policys i root-katalogen `/governance`:
-
-| Domän | Ansvar | Exempel på Policy-constraint |
-| :--- | :--- | :--- |
-| **Trafik & Omlopp** | Optimering av fordonsrörelser. | "Minimera tomkörning mellan depå och linjestart." |
-| **Personal (HR)** | Schemaläggning och arbetsrätt. | "Minst 11 timmars dygnsvila mellan arbetspass." |
-| **Energi & Depå** | Laddstrategier och underhåll. | "Bussar ska ha minst 20% SOC (State of Charge) vid linjestart." |
-| **Ekonomi** | Fakturering, viten och löner. | "Automatisera avvikelseapportering för att undvika viten från SL." |
-| **Compliance** | Lagar, GDPR och avtal. | "All personuppgiftsbehandling ska loggas och rensas enligt GDPR-policy." |
-
----
-
-## Tekniska Riktlinjer
-
-- **Licens:** All källkod publiceras under **GPL-3.0**.
-- **Infrastruktur:** Definieras som kod (Terraform/Pulumi).
-- **Observability:** Inbyggd spårbarhet (Distributed Tracing) är ett krav för att agenter ska kunna analysera och självläka systemet.
-- **Simulering:** Systemet ska kunna köras i "Shadow Mode" där agenter testar policyförändringar mot historisk data innan de deployas.
-
-## Syfte med detta dokument
-
-Detta dokument utgör den primära kontexten för alla agenter som verkar inom Kalles Buss. Det definierar spelreglerna för hur mjukvaran ska byggas, valideras och skalas för att skapa ett helt mjukvarudefinierat bussimperium.
-
----
-
-## Aktuell Status & Operativ Kontext (April 2026)
-
-### Milstolpe 7: Monorepo & Teknisk Standardisering (KLAR ✅)
-För att lösa grundläggande problem med testbarhet och inkonsistens har en omfattande teknisk omstrukturering genomförts.
-- **Monorepo:** Tjänsterna `kalles-hr`, `kalles-traffic` och `kalles-energy-depot` har migrerats till ett enhetligt monorepo som hanteras med `npm workspaces`.
-- **Testramverk:** `Jest` har bytts ut mot `Vitest` i samtliga tjänster för en snabbare och mer stabil testupplevelse.
-- **Teknikstack:** Beroenden har standardiserats och uppdaterats till stabila versioner. TypeScript-konfigurationen har gjorts robust för en monorepo-miljö.
-- **Policy:** Styrande policydokument har uppdaterats för att reflektera den nya tekniska standarden (TypeScript/Node.js).
-
-### Milstolpe 6: Den Kompletta Förarupplevelsen (PÅGÅR 🏗️)
-Vi transformerar portalen från en attrapp till ett operativt verktyg. Inkluderar förarprofiler, licensbevakning, digitala tvillingar för fordon och interaktiva säkerhetskontroller.
-
-### Infrastruktur & Deployment
-- **GCP Projekt:** `joakim-hansson-lab`.
-- **Provisionering:** Terraform hanterar samtliga tjänster och databaser.
-- **URL:** [https://kalles-portal-625737625145.europe-west1.run.app](https://kalles-portal-625737625145.europe-west1.run.app)
-
-### Domänstatus
-- **Traffic:** Digital Tvilling Level 2 live. Stöd för fordonsregister och inspektioner.
-- **Finance:** Fullt integrerad.
-- **HR:** Utökad profil- och certifieringsdata live.
-- **Customer Success:** Portal v2.0 rullas ut med full funktionalitet för förare.
+### Milstolpar
+*   **Milstolpe 7-9:** Monorepo, IaC och NeTEx Baseline (KLAR ✅)
+*   **Milstolpe 10:** Operational Data Model & Agent Negotiation (KLAR ✅)
+    *   Traffic-DB stöder nu normaliserade `journey_calls` och `boarding_rules`.
+    *   VSP-Solver är "Range-Aware" (räckviddsbegränsad planering).
+    *   **Agent Negotiation:** Depot-agenten validerar energibudget (kWh/km + OppCharge) asynkront och tvingar Traffic att kapa blocks vid brott mot energireglerna.
+*   **Milstolpe 11-12:** The World Engine IDE & Persistence (KLAR ✅)
+    *   World Engine har fått en egen PostgreSQL-databas (`kalles-simulation-db`) för persistent lagring av scenarier och resurser.
+    *   IDE-gränssnittet är ombyggt med `react-arborist` för professionell resurshantering (inklusive Drag & Drop).
+    *   Snygga "kebab"-kontextmenyer (`⋮`) inlagda i trädet för mapp- och asset-hantering.
+    *   Dynamiska "Generator Forms" adderade för `FLEET_PROFILE`, `ROSTER_PROFILE` och `FINANCE_PROFILE` som förenklar provisionering utan manuell JSON.
+    *   Fullt stöd för Folder CRUD och Inline Rename (Optimistic UI).
+    *   Playwright-tester implementerade för att garantera UI-integritet mot GCP.
+*   **Milstolpe 13: The Event Horizon & Telemetry (KLAR ✅)**
+    *   Byggt `Event Horizon`-loggen: En färgkodad, filtrerbar terminal för att spåra Agent-förhandlingar i realtid via Server-Sent Events (SSE).
+    *   `Chaos Timeline`: Visuell injicering av stimuli/fel. Vi har implementerat en "⚡ Inject Chaos"-knapp som testkör the Event Horizon.
+    *   Dynamisk Räckvidd (Range-Awareness) i Traffic Solvern.
+    *   **Tactical Live Map:** Skapat en live-karta i företagsappen där `Traffic`-domänen exponerar "här och nu"-läget, med fordonens förseningar, hastighet och SOC.
+    *   **KODA Tapes & NeTEx Realism:** KODA-telemetri kan nu JIT-genereras (Just-In-Time) via Trafiklab eller fallback-syntes. Fullt API för att hämta äkta NeTEx-arkiv per region (SL, UL, Västtrafik, etc.). `journey_calls` och `tripId` stämmer nu perfekt överens.
 
 ### Operativ Checklist för Utveckling
-1. **Lokal körning:** Använd `docker-compose up` i `kalles-governance/` för att starta hela miljön lokalt.
-2. **Databasåtkomst:** För att ansluta till molndatabaser manuellt, starta Cloud SQL Auth Proxy:
-   `./cloud-sql-proxy joakim-hansson-lab:europe-west1:kalles-finance-97d0dd7d --port 5432`
-3. **Testanvändare:** Logga in i portalen som **Förare** för att se live-data för `DRIVER-007`.
+1. **Moln-utrullning:** Använd scriptet `./deploy-all.sh` för att bygga och rulla ut alla tjänster till Cloud Run.
+2. **Playwright-tester:** Kör `npx playwright test` i `kalles-customer-success/apps/simulation-control` för att verifiera UI-ändringar mot molnet.
+3. **Nollställning av data (Hard Reset):** Utförs via knappen "HARD RESET" i `World Engine IDE` (triggar asynkron rensning i alla domäner).
+4. **Databas-schema och Knex:** World Engine backend (`simulation-engine`) använder nu Knex med Unix-socket mot Cloud SQL för all lagring av scenarier.
