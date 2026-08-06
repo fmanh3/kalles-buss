@@ -8,7 +8,7 @@ module.exports = {
       port: Number(process.env.DB_PORT) || 5432,
       user: process.env.DB_USER || 'kalles_energy_user',
       password: process.env.DB_PASSWORD || 'local_password',
-      database: process.env.DB_NAME || 'kalles_energy_depot'
+      database: process.env.DB_NAME || 'kalles-energy-depot'
     },
     migrations: {
       tableName: "knex_migrations",

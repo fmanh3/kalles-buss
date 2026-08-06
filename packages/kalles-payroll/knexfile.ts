@@ -9,10 +9,10 @@ const config: { [key: string]: Knex.Config } = {
     client: "pg",
     connection: {
       host: process.env.DB_HOST || '127.0.0.1',
-      port: Number(process.env.DB_PORT) || 5432,
+      port: Number(process.env.DB_PORT) || 5433,
       user: process.env.DB_USER || 'kalles_finance_user',
       password: process.env.DB_PASSWORD || 'kalles_finance_password_local',
-      database: process.env.DB_NAME || 'kalles_payroll'
+      database: process.env.DB_NAME || 'kalles-finance'
       },
       pool: {
       min: 2,

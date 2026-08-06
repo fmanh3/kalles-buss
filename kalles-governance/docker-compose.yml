@@ -17,7 +17,7 @@ services:
       - kalles-net
 
   # --------------------------------------------------------------------------
-  # Databases (PostgreSQL for each Domain)
+  # Databases (PostgreSQL for each Domain - Aligned with GCP)
   # --------------------------------------------------------------------------
   finance-db:
     image: postgres:15-alpine
@@ -27,7 +27,7 @@ services:
     environment:
       POSTGRES_USER: kalles_finance_user
       POSTGRES_PASSWORD: kalles_finance_password_local
-      POSTGRES_DB: kalles_finance
+      POSTGRES_DB: kalles-finance
     volumes:
       - finance-db-data:/var/lib/postgresql/data
     networks:
@@ -41,7 +41,7 @@ services:
     environment:
       POSTGRES_USER: kalles_hr_user
       POSTGRES_PASSWORD: kalles_hr_password_local
-      POSTGRES_DB: kalles_hr
+      POSTGRES_DB: kalles-hr
     volumes:
       - hr-db-data:/var/lib/postgresql/data
     networks:
@@ -55,7 +55,7 @@ services:
     environment:
       POSTGRES_USER: kalles_traffic_user
       POSTGRES_PASSWORD: kalles_traffic_password_local
-      POSTGRES_DB: kalles_traffic
+      POSTGRES_DB: kalles-traffic
     volumes:
       - traffic-db-data:/var/lib/postgresql/data
     networks:
@@ -69,7 +69,7 @@ services:
     environment:
       POSTGRES_USER: kalles_energy_user
       POSTGRES_PASSWORD: local_password
-      POSTGRES_DB: kalles_energy_depot
+      POSTGRES_DB: kalles-energy-depot
     volumes:
       - energy-db-data:/var/lib/postgresql/data
     networks:
@@ -89,20 +89,6 @@ services:
     networks:
       - kalles-net
 
-  payroll-db:
-    image: postgres:15-alpine
-    container_name: kalles-payroll-db
-    ports:
-      - "5437:5432"
-    environment:
-      POSTGRES_USER: kalles_payroll_user
-      POSTGRES_PASSWORD: local_password
-      POSTGRES_DB: kalles_payroll
-    volumes:
-      - payroll-db-data:/var/lib/postgresql/data
-    networks:
-      - kalles-net
-
   process-db:
     image: postgres:15-alpine
     container_name: kalles-process-db
@@ -111,7 +97,7 @@ services:
     environment:
       POSTGRES_USER: kalles_process_user
       POSTGRES_PASSWORD: local_password
-      POSTGRES_DB: kalles_process
+      POSTGRES_DB: kalles-process
     volumes:
       - process-db-data:/var/lib/postgresql/data
     networks:
@@ -135,7 +121,7 @@ services:
       - DB_PORT=5432
       - DB_USER=kalles_finance_user
       - DB_PASSWORD=kalles_finance_password_local
-      - DB_NAME=kalles_finance
+      - DB_NAME=kalles-finance
     networks:
       - kalles-net
 
@@ -154,7 +140,7 @@ services:
       - DB_PORT=5432
       - DB_USER=kalles_hr_user
       - DB_PASSWORD=kalles_hr_password_local
-      - DB_NAME=kalles_hr
+      - DB_NAME=kalles-hr
     networks:
       - kalles-net
 
@@ -173,7 +159,7 @@ services:
       - DB_PORT=5432
       - DB_USER=kalles_traffic_user
       - DB_PASSWORD=kalles_traffic_password_local
-      - DB_NAME=kalles_traffic
+      - DB_NAME=kalles-traffic
     networks:
       - kalles-net
 
@@ -194,7 +180,7 @@ services:
       - DB_PORT=5432
       - DB_USER=kalles_energy_user
       - DB_PASSWORD=local_password
-      - DB_NAME=kalles_energy_depot
+      - DB_NAME=kalles-energy-depot
     networks:
       - kalles-net
 
@@ -221,5 +207,4 @@ volumes:
   traffic-db-data:
   energy-db-data:
   simulation-db-data:
-  payroll-db-data:
   process-db-data:

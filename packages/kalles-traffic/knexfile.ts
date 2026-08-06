@@ -10,7 +10,7 @@ const config: { [key: string]: Knex.Config } = {
       port: Number(process.env.DB_PORT) || 5432,
       user: process.env.DB_USER || 'kalles_traffic_user',
       password: process.env.DB_PASSWORD || 'kalles_traffic_password_local',
-      database: process.env.DB_NAME || 'kalles_traffic'
+      database: process.env.DB_NAME || 'kalles-traffic'
     },
     pool: {
       min: 2,
