@@ -136,10 +136,26 @@ export const QaDashboard: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isStartingScenario, setIsStartingScenario] = useState(false);
+  const [simulatorState, setSimulatorState] = useState<any>(null);
   const treeRef = useRef<any>(null);
+
+  const fetchSimulatorState = async () => {
+    try {
+      const res = await fetch(`${ENGINE_URL}/state`);
+      if (res.ok) {
+         const data = await res.json();
+         setSimulatorState(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch simulator state", err);
+    }
+  };
 
   useEffect(() => {
     fetchWorldData();
+    fetchSimulatorState();
+    
+    const simulatorInterval = setInterval(fetchSimulatorState, 3000);
 
     // Connect to the Event Horizon Telemetry Stream
     const eventSource = new EventSource(`${ENGINE_URL}/stream`);
@@ -177,6 +193,7 @@ export const QaDashboard: React.FC = () => {
 
     return () => {
       eventSource.close();
+      clearInterval(simulatorInterval);
     };
   }, []);
 
@@ -861,6 +878,84 @@ export const QaDashboard: React.FC = () => {
                  <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '10px' }}>
                    * Use <code>explicit_staff</code> (or vehicles) arrays for detailed unit definitions to test edge-cases, and <code>generators</code> to quickly provision bulk volume.
                  </p>
+              </div>
+            </div>
+          )}
+
+          {!selectedNodeData && (
+            <div className="editor-view" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #333', paddingBottom: '15px' }}>
+                <h2 style={{ margin: 0, color: '#3498db' }}>🌍 Outer Ring Counterparts (Simulator)</h2>
+                <button className="btn-secondary" onClick={fetchSimulatorState}>🔄 Refresh State</button>
+              </div>
+              <p style={{ color: '#888', margin: 0, fontSize: '0.9rem' }}>
+                Detta är omvärldsimulatorns kontrollpanel. Här övervakas och verifieras de utbetalningar, deklarationer och rapporter som Kalles Buss skickar ut till externa motparter.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '10px' }}>
+                {/* CARD 1: BANKGIROT */}
+                <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '5px', padding: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '8px' }}>🏦 Bankgirot (ISO 20022)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '0.9rem' }}>
+                    <div>Processed Outgoing Salaries: <strong style={{ color: '#fff' }}>{simulatorState?.counterparts?.bankgiro?.processedOutgoingSalaries?.toLocaleString() || 0} SEK</strong></div>
+                    <div style={{ color: '#666', fontSize: '0.8rem', marginTop: '10px' }}>Received pain.001 files:</div>
+                    <div style={{ maxHeight: '100px', overflowY: 'auto', background: '#111', padding: '5px', borderRadius: '3px', border: '1px solid #222' }}>
+                      {(!simulatorState?.counterparts?.bankgiro?.receivedPain001Files || simulatorState.counterparts.bankgiro.receivedPain001Files.length === 0) && <span style={{ color: '#444', fontStyle: 'italic' }}>No bank files received.</span>}
+                      {simulatorState?.counterparts?.bankgiro?.receivedPain001Files?.map((f: any, idx: number) => (
+                        <div key={idx} style={{ fontSize: '0.75rem', borderBottom: '1px solid #222', padding: '3px 0' }}>
+                          📅 {new Date(f.timestamp).toLocaleTimeString()} - <strong>{f.netAmount?.toLocaleString()} SEK</strong> (Run: {f.runId})
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: SKATTEVERKET */}
+                <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '5px', padding: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#e67e22', display: 'flex', alignItems: 'center', gap: '8px' }}>🇸🇪 Skatteverket (AGI)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '0.9rem' }}>
+                    <div>Total AGI Submissions: <strong style={{ color: '#fff' }}>{simulatorState?.counterparts?.skatteverket?.receivedAgiReports?.length || 0}</strong></div>
+                    <div style={{ color: '#666', fontSize: '0.8rem', marginTop: '10px' }}>Received AGI Declarations:</div>
+                    <div style={{ maxHeight: '100px', overflowY: 'auto', background: '#111', padding: '5px', borderRadius: '3px', border: '1px solid #222' }}>
+                      {(!simulatorState?.counterparts?.skatteverket?.receivedAgiReports || simulatorState.counterparts.skatteverket.receivedAgiReports.length === 0) && <span style={{ color: '#444', fontStyle: 'italic' }}>No AGI declarations received.</span>}
+                      {simulatorState?.counterparts?.skatteverket?.receivedAgiReports?.map((r: any, idx: number) => (
+                        <div key={idx} style={{ fontSize: '0.75rem', borderBottom: '1px solid #222', padding: '3px 0' }}>
+                          📅 {new Date(r.timestamp).toLocaleTimeString()} - 💰 Gross: {r.grossAmount?.toLocaleString()} SEK (Tax: {r.taxAmount?.toLocaleString()} SEK)
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: FORA PENSION */}
+                <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '5px', padding: '15px', gridColumn: 'span 2' }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#3498db', display: 'flex', alignItems: 'center', gap: '8px' }}>📝 FORA Pensionsredovisning</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <div>
+                      <div style={{ color: '#666', fontSize: '0.8rem' }}>Received FORA Reports:</div>
+                      <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#111', padding: '5px', borderRadius: '3px', border: '1px solid #222', marginTop: '5px' }}>
+                        {(!simulatorState?.counterparts?.fora?.receivedReports || simulatorState.counterparts.fora.receivedReports.length === 0) && <span style={{ color: '#444', fontStyle: 'italic' }}>No FORA reports received.</span>}
+                        {simulatorState?.counterparts?.fora?.receivedReports?.map((r: any, idx: number) => (
+                          <div key={idx} style={{ fontSize: '0.75rem', borderBottom: '1px solid #222', padding: '3px 0' }}>
+                            📅 {new Date(r.timestamp).toLocaleTimeString()} - Gross: {r.grossAmount?.toLocaleString()} SEK
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#666', fontSize: '0.8rem' }}>Sent Pension Invoices (FORA ➡️ Kalles Buss):</div>
+                      <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#111', padding: '5px', borderRadius: '3px', border: '1px solid #222', marginTop: '5px' }}>
+                        {(!simulatorState?.counterparts?.fora?.sentPensionInvoices || simulatorState.counterparts.fora.sentPensionInvoices.length === 0) && <span style={{ color: '#444', fontStyle: 'italic' }}>No pension invoices sent yet.</span>}
+                        {simulatorState?.counterparts?.fora?.sentPensionInvoices?.map((i: any, idx: number) => (
+                          <div key={idx} style={{ fontSize: '0.75rem', borderBottom: '1px solid #222', padding: '3px 0', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>⚡ {i.reference}</span>
+                            <strong style={{ color: '#e74c3c' }}>{i.amount?.toLocaleString()} SEK (Pending AP)</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

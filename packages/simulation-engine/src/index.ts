@@ -401,6 +401,16 @@ async function start() {
     });
   });
 
+  app.post('/world/counterpart/received', async (req, res) => {
+    try {
+      await counterpartMocks.receivePayrollData(req.body);
+      res.json({ status: 'SUCCESS' });
+    } catch (err: any) {
+      Logger.error(`[WorldEngine] Error receiving counterpart payroll: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   /**
    * Time Machine Endpoint: Download historical GTFS-RT from Trafiklab KoDa
    */

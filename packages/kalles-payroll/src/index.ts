@@ -28,6 +28,15 @@ async function start() {
     }
   });
 
+  app.get('/api/payroll/runs/:id/records', async (req, res) => {
+    try {
+      const records = await db('payroll_records').where({ run_id: req.params.id });
+      res.json(records);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   /**
    * Triggers a payment run for a specific period.
    * In a real system, this would be an automated process.

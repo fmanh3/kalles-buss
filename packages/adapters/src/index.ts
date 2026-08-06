@@ -3,6 +3,7 @@ import { BankGateway } from './bank-gateway';
 import { TelematicsAdapter } from './telematics-adapter';
 import { WeatherAdapter } from './weather-adapter';
 import { NeTExAdapter } from './netex-adapter';
+import { PayrollAdapter } from './payroll-adapter';
 import express from 'express';
 
 async function start() {
@@ -13,6 +14,9 @@ async function start() {
   const telematicsAdapter = new TelematicsAdapter(pubsub);
   const weatherAdapter = new WeatherAdapter(pubsub);
   const netexAdapter = new NeTExAdapter(pubsub);
+  
+  const payrollAdapter = new PayrollAdapter(pubsub);
+  payrollAdapter.start();
 
   // Expose HTTP endpoints for webhooks/simulation
   const app = express();
