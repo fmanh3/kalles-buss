@@ -401,12 +401,32 @@ async function start() {
     });
   });
 
-  app.post('/world/counterpart/received', async (req, res) => {
+  app.post('/world/counterpart/bankgiro/received', async (req, res) => {
     try {
-      await counterpartMocks.receivePayrollData(req.body);
+      await counterpartMocks.receiveBankgiroFile(req.body);
       res.json({ status: 'SUCCESS' });
     } catch (err: any) {
-      Logger.error(`[WorldEngine] Error receiving counterpart payroll: ${err.message}`);
+      Logger.error(`[WorldEngine] Error processing incoming Bankgirot file: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/world/counterpart/skatteverket/received', async (req, res) => {
+    try {
+      await counterpartMocks.receiveSkatteverketAgi(req.body);
+      res.json({ status: 'SUCCESS' });
+    } catch (err: any) {
+      Logger.error(`[WorldEngine] Error processing incoming Skatteverket AGI: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/world/counterpart/fora/received', async (req, res) => {
+    try {
+      await counterpartMocks.receiveForaReport(req.body);
+      res.json({ status: 'SUCCESS' });
+    } catch (err: any) {
+      Logger.error(`[WorldEngine] Error processing incoming FORA report: ${err.message}`);
       res.status(500).json({ error: err.message });
     }
   });

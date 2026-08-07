@@ -63,42 +63,53 @@ export class CounterpartMocks {
   }
 
   /**
-   * Processes the incoming data formats (pain.001, AGI, FORA) sent from the Adapters.
-   * Auto-generates a matching FORA vendor invoice back to Kalles Buss.
+   * Bankgirot Simulator: Receives and processes valid pain.001 bank files.
    */
-  async receivePayrollData(payload: any) {
-    const { runId, bankXml, agiXml, foraReport, netAmount, grossAmount, taxAmount, employerContributions } = payload;
-    
-    Logger.info(`[Simulator Counterpart: Bankgiro] Processing pain.001 XML bank file for payroll run ${runId}`);
-    this.state.bankgiro.processedOutgoingSalaries += netAmount;
+  receiveBankgiroFile(payload: any) {
+    const { reference, netAmount, xml, source } = payload;
+    Logger.info(`[Simulator Counterpart: Bankgiro] Processing pain.001 XML file for '${reference}' from source '${source}' totaling ${netAmount} SEK`);
+    this.state.bankgiro.processedOutgoingSalaries += Number(netAmount);
     this.state.bankgiro.receivedPain001Files.push({
-      runId,
+      runId: reference,
       timestamp: new Date().toISOString(),
-      netAmount,
-      xml: bankXml
+      netAmount: Number(netAmount),
+      xml
     });
+  }
 
-    Logger.info(`[Simulator Counterpart: Skatteverket] Processing AGI XML report for period`);
+  /**
+   * Skatteverket Simulator: Receives and registers Employer Monthly AGI declarations.
+   */
+  receiveSkatteverketAgi(payload: any) {
+    const { reference, period, grossAmount, taxAmount, employerContributions, xml } = payload;
+    Logger.info(`[Simulator Counterpart: Skatteverket] Registering AGI declaration for period '${period}' (Gross: ${grossAmount} SEK, Tax: ${taxAmount} SEK)`);
     this.state.skatteverket.receivedAgiReports.push({
-      runId,
+      runId: reference,
       timestamp: new Date().toISOString(),
-      grossAmount,
-      taxAmount,
-      employerContributions,
-      xml: agiXml
+      grossAmount: Number(grossAmount),
+      taxAmount: Number(taxAmount),
+      employerContributions: Number(employerContributions),
+      xml
     });
+  }
 
-    Logger.info(`[Simulator Counterpart: FORA] Processing pension report for period`);
+  /**
+   * FORA Simulator: Receives pension reports, updates state, and auto-generates a supplier pension invoice back to Kalles Buss.
+   */
+  async receiveForaReport(payload: any) {
+    const { runId, grossAmount, report } = payload;
+    Logger.info(`[Simulator Counterpart: FORA] Received pension report for run ${runId} (Gross salaries: ${grossAmount} SEK)`);
+    
     this.state.fora.receivedReports.push({
       runId,
       timestamp: new Date().toISOString(),
-      grossAmount,
-      foraReport
+      grossAmount: Number(grossAmount),
+      report
     });
 
-    // Trigger automated FORA Pension Invoice generation (4.5% of total gross salary)
-    const totalForaPremium = grossAmount * 0.045;
-    Logger.info(`[Simulator Counterpart: FORA] Pension report processed. Issuing matching pension premium invoice for ${totalForaPremium} SEK...`);
+    // Auto-generate matching FORA Pension Invoice back to Kalles Buss AP (4.5% of total gross salary)
+    const totalForaPremium = Number(grossAmount) * 0.045;
+    Logger.info(`[Simulator Counterpart: FORA] Issuing matching pension premium invoice for ${totalForaPremium} SEK...`);
 
     const financeUrl = process.env.FINANCE_SERVICE_URL || 'http://localhost:8084';
     try {
@@ -106,7 +117,7 @@ export class CounterpartMocks {
         vendorName: 'FORA Pensioner',
         invoiceReference: `FORA-PREM-${runId}`,
         amountTotal: totalForaPremium,
-        amountVat: 0, // Pensions are VAT-exempt
+        amountVat: 0, // Pensions are VAT-free in Sweden
         dueDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10), // Due in 30 days
         category: 'Operating Costs - Pensions (FORA)'
       });
@@ -117,7 +128,7 @@ export class CounterpartMocks {
         amount: totalForaPremium,
         reference: `FORA-PREM-${runId}`
       });
-      Logger.info(`[Simulator Counterpart: FORA] Pension invoice successfully sent to Finance (ID: ${invoiceResponse.data.invoiceId}).`);
+      Logger.info(`[Simulator Counterpart: FORA] Pension invoice successfully dispatched to Finance AP (ID: ${invoiceResponse.data.invoiceId}).`);
     } catch (err: any) {
       Logger.error(`[Simulator Counterpart: FORA] Failed to send pension invoice to Finance: ${err.message}`);
     }

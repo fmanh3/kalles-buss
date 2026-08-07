@@ -4,6 +4,8 @@ import { TelematicsAdapter } from './telematics-adapter';
 import { WeatherAdapter } from './weather-adapter';
 import { NeTExAdapter } from './netex-adapter';
 import { PayrollAdapter } from './payroll-adapter';
+import { BankgirotGatewayAdapter } from './bankgirot-gateway-adapter';
+import { SkatteverketGatewayAdapter } from './skatteverket-gateway-adapter';
 import express from 'express';
 
 async function start() {
@@ -17,6 +19,12 @@ async function start() {
   
   const payrollAdapter = new PayrollAdapter(pubsub);
   payrollAdapter.start();
+
+  const bankgirotGateway = new BankgirotGatewayAdapter(pubsub);
+  bankgirotGateway.start();
+
+  const skatteverketGateway = new SkatteverketGatewayAdapter(pubsub);
+  skatteverketGateway.start();
 
   // Expose HTTP endpoints for webhooks/simulation
   const app = express();
